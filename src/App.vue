@@ -1,9 +1,10 @@
 <template>
-  <MainLayout>
-  </MainLayout>
+  <router-view />
 </template>
 
-
-<script setup>
-import MainLayout from '@/layouts/default/Default.vue'
+<script>
+export default {
+  name: 'App',
+  // other options...
+}
 </script>

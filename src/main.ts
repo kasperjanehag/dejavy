@@ -1,4 +1,4 @@
-import { registerPlugins } from '@/plugins'
+import { registerPlugins } from './plugins'
 import { createApp } from "vue";
 import "./styles.css";
 import App from "./App.vue";

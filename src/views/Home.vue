@@ -1,7 +1,7 @@
 <template>
-  <Default />
+  <DefaultLayout />
 </template>
 
 <script setup>
-  import Default from '@/layouts/default/Default.vue'
+  import DefaultLayout from '../layouts/default/Default.vue'
 </script>

@@ -1,7 +1,5 @@
 <template>
-  <v-card>
-  
-    <p>Main Content</p>
-
-  </v-card>
+  <v-main class="d-flex align-center justify-center" style="min-height: 300px;">
+    Main Content
+  </v-main>
 </template>

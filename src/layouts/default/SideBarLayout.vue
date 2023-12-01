@@ -1,7 +1,9 @@
 <template>
-  <v-navigation-drawer width="350">
-    <v-list-item title="Dejavy" subtitle="Clean up"></v-list-item>
+  <v-navigation-drawer>
+    <v-list-item title="Dejavy 1" subtitle="Clean up"></v-list-item>
+    <v-list-item title="Dejavy 2" subtitle="Clean up"></v-list-item>
     <v-divider></v-divider>
+    <v-list-item title="Dejavy 3" subtitle="Clean up"></v-list-item>
     <nested-list/>
   </v-navigation-drawer>
 </template>

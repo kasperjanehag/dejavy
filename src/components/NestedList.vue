@@ -13,7 +13,6 @@
   </template>
   
 <script>
-
 import NestedListItems from './NestedListItems.vue';
 
 export default {
@@ -22,14 +21,27 @@ export default {
     },
     data: function() {
         return {
-            items: [],
+            items: [
+              {
+                id: 1,
+                icon: "mdi-plus-outline",
+                name: "File 1"
+              },
+              {
+                id: 2,
+                icon: "mdi-plus-outline",
+                name: "Folder 1",
+                isOpen: false,
+                children: [
+                  {
+                    id: 3,
+                    icon: "mdi-plus-outline",
+                    name: "File 2"
+                  }
+                ]
+              }
+            ],
         };
-    },
-    mounted() {
-      eel.list_images()((result) => {
-          console.log(result);
-          this.items = result;
-      });
     },
 }
 </script>
