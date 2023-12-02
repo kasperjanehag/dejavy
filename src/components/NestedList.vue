@@ -12,36 +12,14 @@
     </v-card>
   </template>
   
-<script>
-import NestedListItems from './NestedListItems.vue';
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { invoke } from '@tauri-apps/api/tauri'
+import NestedListItems from './NestedListItems.vue'
 
-export default {
-    components: {
-        NestedListItems
-    },
-    data: function() {
-        return {
-            items: [
-              {
-                id: 1,
-                icon: "mdi-plus-outline",
-                name: "File 1"
-              },
-              {
-                id: 2,
-                icon: "mdi-plus-outline",
-                name: "Folder 1",
-                isOpen: false,
-                children: [
-                  {
-                    id: 3,
-                    icon: "mdi-plus-outline",
-                    name: "File 2"
-                  }
-                ]
-              }
-            ],
-        };
-    },
-}
+const items = ref([])
+
+onMounted(async () => {
+  items.value = await invoke('get_data')
+})
 </script>
