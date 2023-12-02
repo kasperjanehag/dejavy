@@ -7,10 +7,7 @@ use tauri::command;
 #[derive(serde::Serialize)]
 struct Item {
     id: u32,
-    icon: String,
     name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    is_open: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     children: Option<Vec<Item>>,
 }
@@ -20,22 +17,16 @@ fn get_data() -> Vec<Item> {
     vec![
         Item {
             id: 1,
-            icon: "mdi-plus-outline".to_string(),
             name: "File 1".to_string(),
-            is_open: None,
             children: None,
         },
         Item {
             id: 2,
-            icon: "mdi-plus-outline".to_string(),
             name: "Folder 1".to_string(),
-            is_open: Some(false),
             children: Some(vec![
                 Item {
                     id: 3,
-                    icon: "mdi-plus-outline".to_string(),
                     name: "File 2".to_string(),
-                    is_open: None,
                     children: None,
                 },
             ]),

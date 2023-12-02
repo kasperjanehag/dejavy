@@ -17,9 +17,36 @@ import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/tauri'
 import NestedListItems from './NestedListItems.vue'
 
-const items = ref([])
+interface Item {
+  id: number;
+  name: string;
+  children?: Item[];
+  icon?: string;
+  is_open?: boolean;
+}
+
+const items = ref<Item[]>([])
+
+const processFileTree = (item: Item): Item => {
+  const processedItem: Item = {
+    ...item,
+    icon: item.children ? 'mdi-folder-outline' : 'mdi-file-outline',
+    ...(item.children && { is_open: false }),
+  }
+
+  if (item.children) {
+    processedItem.children = item.children.map(processFileTree)
+  }
+
+  return processedItem
+}
 
 onMounted(async () => {
-  items.value = await invoke('get_data')
+
+  // Get file tree from backend
+  const fileTreeData = (await invoke('get_data')) as Item[];
+  
+  // Add front-end specific properties to render tree
+  items.value = fileTreeData.map(processFileTree)
 })
 </script>
