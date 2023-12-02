@@ -3,10 +3,11 @@
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 use tauri::command;
+use walkdir::WalkDir;
 
 #[derive(serde::Serialize)]
 struct Item {
-    id: u32,
+    id: u64,
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     children: Option<Vec<Item>>,
@@ -34,9 +35,24 @@ fn get_data() -> Vec<Item> {
     ]
 }
 
+#[command]
+fn list_paths() -> Vec<String> {
+    let path = "/Users/kasper_janehag/Library/CloudStorage/OneDrive-McKinsey&Company/Documents/repos/dejavy/tests";
+    WalkDir::new(path)
+        .into_iter()
+        .filter_map(Result::ok)
+        .map(|entry| entry.path().to_string_lossy().into_owned())
+        .collect()
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_data])
+        .invoke_handler(tauri::generate_handler![get_data,list_paths])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+
+// use std::path::Path;
+// use walkdir::WalkDir;
+
