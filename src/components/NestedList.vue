@@ -6,27 +6,6 @@
         density="compact"
       >
 
-        <!-- Temporary button to list files -->
-        <v-list-group value="Paths">
-        <template v-slot:activator="{ props }">
-          <v-list-item
-            v-bind="props"
-            prepend-icon="mdi-folder"
-            title="Paths"
-            @click="showPaths = !showPaths; listPaths()"
-          ></v-list-item>
-        </template>
-
-        <v-list-item
-          v-for="path in paths"
-          :key="path"
-          :value="path"
-          :title="path"
-        ></v-list-item>
-      </v-list-group>
-        
-        
-        
         <NestedListItems :items="items"></NestedListItems>
   
       </v-list>
@@ -54,7 +33,7 @@ const showPaths = ref(false)
 const listPaths = async () => {
   console.log('listPaths called');
   if (showPaths.value) {
-    const result = await invoke('list_paths');
+    const result = await invoke('list_paths_in_test_dir');
     console.log('list_paths result:', result);
     paths.value = result as string[];
   } else {
