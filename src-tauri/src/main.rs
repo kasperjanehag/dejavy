@@ -46,7 +46,7 @@ fn paths_to_file_tree(paths: Vec<PathBuf>) -> Vec<Item> {
     /// * `id_counter` - A counter used to assign unique IDs to the nodes.
     fn build_tree(paths: Vec<PathBuf>, root: &mut Node, id_counter: &mut u32) {
         for path in paths {
-            let mut node = root;
+            let mut node = &mut *root;
             for component in path.components() {
                 let key = component.as_os_str().to_string_lossy().into_owned();
                 node = node.children.entry(key).or_insert_with(Node::default);
