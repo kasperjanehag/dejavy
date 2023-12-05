@@ -1,5 +1,4 @@
 <template>
-  <!-- <v-app> -->
   <v-layout class="rounded rounded-md">
 
     <v-app-bar title="Application bar"></v-app-bar>
@@ -7,8 +6,7 @@
     <MainLayout />
 
   </v-layout>
-      <!-- </v-layout> -->
-  <!-- </v-app> -->
+  
 </template>
 
 <script>
@@ -17,7 +15,6 @@ import SideBarLayout from './SideBarLayout.vue'
 import MainLayout from './MainLayout.vue'
 
 export default {
-  name: 'DefaultLayout',
   components: {
     SideBarLayout,
     MainLayout
