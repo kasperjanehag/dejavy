@@ -77,27 +77,19 @@ fn paths_to_file_tree(paths: Vec<PathBuf>) -> Vec<Item> {
 }
 
 #[command]
-fn get_data() -> Vec<Item> {
-    let default_path = "/Users/kasper_janehag/Library/CloudStorage/OneDrive-McKinsey&Company/Documents/repos/dejavy/tests";
-    let paths = list_paths(default_path, true);
+fn get_file_tree_data(path: String) -> Vec<Item> {
+    let paths = list_paths(&path, true);
     let file_tree = paths_to_file_tree(paths);
     file_tree
 }
 
-#[command]
-fn list_paths_in_test_dir() -> Vec<String> {
-    let default_path = "/Users/kasper_janehag/Library/CloudStorage/OneDrive-McKinsey&Company/Documents/repos/dejavy/tests";
-    let paths = list_paths(default_path, true);
-    paths.into_iter().map(|path| path.to_string_lossy().into_owned()).collect()
-}
-
-fn list_paths(base_path: &str, return_relative: bool) -> Vec<PathBuf> {
-    WalkDir::new(base_path)
+fn list_paths(path: &str, return_relative: bool) -> Vec<PathBuf> {
+    WalkDir::new(path)
         .into_iter()
         .filter_map(Result::ok)
         .map(|entry| {
             if return_relative {
-                entry.path().strip_prefix(base_path).unwrap().to_path_buf()
+                entry.path().strip_prefix(path).unwrap().to_path_buf()
             } else {
                 entry.into_path()
             }
@@ -107,12 +99,7 @@ fn list_paths(base_path: &str, return_relative: bool) -> Vec<PathBuf> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_data,list_paths_in_test_dir])
+        .invoke_handler(tauri::generate_handler![get_file_tree_data])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-
-
-// use std::path::Path;
-// use walkdir::WalkDir;
-

@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, provide } from 'vue';
 import { open } from '@tauri-apps/api/dialog';
 
 const extensions = ['png', 'jpeg', 'jpg', 'gif', 'bmp', 'tiff', 'ico', 'webp'];
@@ -85,6 +85,8 @@ const selectDirectory = async () => {
     console.error('Error selecting directory:', error);
   }
 };
+
+provide('selectedDirectory', selectedDirectory);
 
 </script>
 

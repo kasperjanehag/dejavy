@@ -13,7 +13,7 @@
   </template>
   
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, inject, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/tauri'
 import NestedListItems from './NestedListItems.vue'
 
@@ -26,18 +26,14 @@ interface Item {
 }
 
 const items = ref<Item[]>([])
-const paths = ref<string[]>([])
-const showPaths = ref(false)
+const selectedDirectory = inject('selectedDirectory');
 
-
-const listPaths = async () => {
-  console.log('listPaths called');
-  if (showPaths.value) {
-    const result = await invoke('list_paths_in_test_dir');
-    console.log('list_paths result:', result);
-    paths.value = result as string[];
+const getFileTreeData = async () => {
+  if (selectedDirectory.value) {
+    const fileTreeData = await invoke('get_file_tree_data', { path: selectedDirectory.value });
+    return fileTreeData as Item[];
   } else {
-    paths.value = [];
+    return [];
   }
 }
 
@@ -55,14 +51,11 @@ const processFileTree = (item: Item): Item => {
   return processedItem
 }
 
-onMounted(async () => {
-  // Get file tree from backend
-  const fileTreeData = (await invoke('get_data')) as Item[];
-  
-  // Add front-end specific properties to render tree
-  items.value = fileTreeData.map(processFileTree)
+watch(selectedDirectory, async (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    const fileTreeData = await getFileTreeData();
+    items.value = fileTreeData.map(processFileTree);
+  }
+}, { immediate: true });
 
-  // Call listPaths function
-  await listPaths()
-})
 </script>
