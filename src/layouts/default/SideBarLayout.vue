@@ -1,8 +1,6 @@
 <template>
-  <v-navigation-drawer width="450">
+  <v-navigation-drawer dark width="450">
 
-    
-    
     <v-container fluid>
       <v-row>
         <v-col cols="12">

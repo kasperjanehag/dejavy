@@ -1,7 +1,9 @@
 <template>
   <v-layout class="rounded rounded-md">
 
-    <v-app-bar title="Application bar"></v-app-bar>
+    <v-app-bar>
+      <v-img src="src/assets/logo.png"></v-img>
+    </v-app-bar>
     <SideBarLayout />
     <MainLayout />
 
@@ -9,15 +11,7 @@
   
 </template>
 
-<script>
-import { defineComponent } from 'vue'
+<script setup lang="ts">
 import SideBarLayout from './SideBarLayout.vue'
 import MainLayout from './MainLayout.vue'
-
-export default {
-  components: {
-    SideBarLayout,
-    MainLayout
-  }
-}
 </script>
