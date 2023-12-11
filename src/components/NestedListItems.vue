@@ -7,7 +7,7 @@
         :key="item.id"
         :prepend-icon="item.icon"
         :value="item.name"
-        v-model="item.isOpen"
+        v-model="item.is_open"
     >
         <template v-slot:activator="{ props }">
             <v-list-item
@@ -28,12 +28,17 @@
         :key="item.id"
         :prepend-icon="item.icon"
         :title="item.name"
+        :class="{ 'selected': selectedImagesStore.images.find(image => image.absolute_path === item.absolute_path) }"
+        @click="selectImage(item)"
     ></v-list-item>
-  </template>
+
+</template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue';
+
+import { computed, defineProps } from 'vue'
 import NestedListItems from './NestedListItems.vue';
+import { useSelectedImagesStore } from '../stores/selectedImagesStore';
 
 interface FileTreeItem {
     id: number;
@@ -45,13 +50,31 @@ interface FileTreeItem {
     file_format?: string;
     relative_path?: string;
     children?: FileTreeItem[];
-  }
+};
+
+const selectedImagesStore = useSelectedImagesStore();
 
 const props = defineProps<{
   items: FileTreeItem[];
 }>();
 
+const selectImage = (item: FileTreeItem) => {
+  if (item.type === 'image' && item.absolute_path) {
+    if (selectedImagesStore.images.find(image => image.absolute_path === item.absolute_path)) {
+      selectedImagesStore.removeImagePath({ absolute_path: item.absolute_path });
+    } else {
+      selectedImagesStore.addImagePath({ absolute_path: item.absolute_path });
+    }
+  }
+}
+
 const itemsFiles = computed(() => props.items.filter(item => !item.children));
 const itemsFolders = computed(() => props.items.filter(item => item.children && item.children.length > 0));
 
 </script>
+
+<style scoped>
+.selected {
+  background-color: #f0f0f0; /* Change this to your preferred color */
+}
+</style>
