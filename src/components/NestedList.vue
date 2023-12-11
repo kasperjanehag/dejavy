@@ -12,50 +12,85 @@
     </v-card>
   </template>
   
-<script setup lang="ts">
-import { ref, inject, watch } from 'vue'
-import { invoke } from '@tauri-apps/api/tauri'
-import NestedListItems from './NestedListItems.vue'
-
-interface Item {
-  id: number;
-  name: string;
-  children?: Item[];
-  icon?: string;
-  is_open?: boolean;
-}
-
-const items = ref<Item[]>([])
-const selectedDirectory = inject('selectedDirectory');
-
-const getFileTreeData = async () => {
-  if (selectedDirectory.value) {
-    const fileTreeData = await invoke('get_file_tree_data', { path: selectedDirectory.value });
-    return fileTreeData as Item[];
-  } else {
-    return [];
-  }
-}
-
-const processFileTree = (item: Item): Item => {
-  const processedItem: Item = {
-    ...item,
-    icon: item.children ? 'mdi-folder-outline' : 'mdi-file-outline',
-    ...(item.children && { is_open: false }),
+  
+  <script setup lang="ts">
+  import { ref, watch, inject } from 'vue';
+  import { invoke } from '@tauri-apps/api/tauri';
+  import NestedListItems from './NestedListItems.vue';
+    
+  interface FileTreeItem {
+    id: number;
+    name?: string;
+    absolute_path?: string;
+    file_format?: string;
+    relative_path?: string;
+    children?: FileTreeItem[];
+    icon?: string;
+    is_open?: boolean;
+    type?: 'directory' | 'image';
   }
 
-  if (item.children) {
-    processedItem.children = item.children.map(processFileTree)
+  interface Image {
+    absolute_path: string;
+    file_format: string;
+    name: string;
+    relative_path: string;
+  }
+  
+  interface Directory {
+    name: string;
+    children?: FileTreeItem[];
   }
 
-  return processedItem
-}
-
-watch(selectedDirectory, async (newVal, oldVal) => {
-  if (newVal !== oldVal) {
-    const fileTreeData = await getFileTreeData();
-    items.value = fileTreeData.map(processFileTree);
+  interface OriginalItem {
+    Directory?: Directory;
+    Image?: Image;
   }
-}, { immediate: true });
 
-</script>
+  
+  let idCounter = 0;
+  
+  const items = ref<FileTreeItem[]>([]);
+  const selectedDirectory = inject('selectedDirectory');
+  
+  const getFileTreeData = async () => {
+    if (selectedDirectory.value) {
+      const fileTreeData = await invoke('get_file_tree_data', { path: selectedDirectory.value });
+      return fileTreeData as OriginalItem[];
+    } else {
+      return [];
+    }
+  }
+  
+
+  const processFileTree = (item: OriginalItem): FileTreeItem => {
+    idCounter += 1;
+    const processedItem: FileTreeItem = {
+      id: idCounter,
+      ...(item.Directory && { is_open: false }),
+    }
+
+    if (item.Directory) {
+      processedItem.name = item.Directory.name;
+      processedItem.children = item.Directory.children?.map(processFileTree);
+      processedItem.icon = 'mdi-folder-outline';
+      processedItem.type = 'directory';
+    } else if (item.Image) {
+      processedItem.name = item.Image.name;
+      processedItem.absolute_path = item.Image.absolute_path;
+      processedItem.file_format = item.Image.file_format;
+      processedItem.relative_path = item.Image.relative_path;
+      processedItem.icon = 'mdi-file-outline';
+      processedItem.type = 'image';
+    }
+
+    return processedItem;
+  }
+  
+  watch(selectedDirectory, async (newVal, oldVal) => {
+    if (newVal !== oldVal || newVal !== undefined) {
+      const fileTreeData = await getFileTreeData();
+      items.value = fileTreeData.map(processFileTree);
+    }
+  });
+  </script>

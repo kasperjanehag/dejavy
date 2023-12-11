@@ -4,97 +4,207 @@
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 use tauri::command;
 use walkdir::WalkDir;
-use std::path::PathBuf;
+use std::path::{ PathBuf, Path};
 use std::collections::HashMap;
-
+// use std::fs::File;
+// use std::time::SystemTime;
+// use std::io::Read;
+// use md5;
 
 #[derive(serde::Serialize, Debug)]
-struct Item {
-    id: u32,
+struct Image {
+    relative_path: PathBuf,
+    absolute_path: PathBuf,
     name: String,
-    children: Option<Vec<Item>>,
+    file_format: String,
+    // creation_time: SystemTime,
+    // size: u64,
+    // resolution: Option<(u32, u32)>, // This will be None if the resolution can't be determined
+    // md5_hash: String,
 }
 
-struct Node {
-    id: Option<u32>,
-    children: HashMap<String, Node>,
+#[derive(serde::Serialize)]
+struct Directory {
+    name: String,
+    children: Vec<FileTreeNode>,
 }
 
-impl Default for Node {
-    fn default() -> Self {
-        Node {
-            id: None,
-            children: HashMap::new(),
-        }
-    }
+#[derive(serde::Serialize)]
+enum FileTreeNode {
+    Directory(Directory),
+    Image(Image),
 }
 
-fn paths_to_file_tree(paths: Vec<PathBuf>) -> Vec<Item> {
+fn paths_to_file_tree(image_map: HashMap<String, Image>) -> Vec<FileTreeNode> {
+    let mut root = FileTreeNode::Directory(Directory {
+        name: String::from("root"),
+        children: Vec::new(),
+    });
 
 
-    /// This helper function builds a tree structure in `root` from the given `paths`.
-    ///
-    /// Each `PathBuf` in `paths` is split into components, and for each component,
-    /// a new `Node` is created if it doesn't already exist. The `Node` is then inserted
-    /// as a child of the current node in the tree. The last node in each path is assigned
-    /// a unique ID.
-    ///
-    /// # Arguments
-    ///
-    /// * `paths` - A vector of `PathBuf` representing the paths to be added to the tree.
-    /// * `root` - The root `Node` of the tree.
-    /// * `id_counter` - A counter used to assign unique IDs to the nodes.
-    fn build_tree(paths: Vec<PathBuf>, root: &mut Node, id_counter: &mut u32) {
-        for path in paths {
-            let mut node = &mut *root;
-            for component in path.components() {
-                let key = component.as_os_str().to_string_lossy().into_owned();
-                node = node.children.entry(key).or_insert_with(Node::default);
+
+    for (path, image) in image_map {
+        let mut node = &mut root;
+
+        // Go thorugh all components of the path and update current node as we walk down the path
+        // Once all components has been iterated through
+        let components: Vec<_> = Path::new(&path).components().collect();
+
+        for (i, component) in components.iter().enumerate() {
+            if i == components.len() - 1 {
+                continue;
             }
-            node.id = Some(*id_counter);
-            *id_counter += 1;
+
+            let key = component.as_os_str().to_string_lossy().into_owned();
+            let key_clone = key.clone();
+
+            // Check if the current node is a directory or an image
+            match node {
+
+                // If it's a directory...
+                FileTreeNode::Directory(directory) => {
+
+                    // Look for a child directory with the same name as the current path component
+                    // by iterating over the child vector, where position() returns the index of the first item where the
+                    // colsure returns true.
+                    let child_index = directory.children.iter().position(|child| {
+                        if let FileTreeNode::Directory(dir) = child {
+                            dir.name == key
+                        } else {
+                            false
+                        }
+                    });
+
+                    // If a child directory was found...
+                    match child_index {
+                        Some(index) => {
+
+                            // Set the current node to the child directory
+                            node = &mut directory.children[index];
+                        }
+
+                        // If no child directory was found...
+                        None => {
+
+                            // Create a new directory with the current path component as its name
+                            directory.children.push(FileTreeNode::Directory(
+                                Directory {
+                                    name: key_clone,
+                                    children: Vec::new(),
+                                }
+                            ));
+
+                            // Set the current node to the new directory
+                            node = directory.children.last_mut().unwrap();
+                        }
+                    }
+                }
+                FileTreeNode::Image(_) => panic!("Image nodes should not have children"),
+            };
         }
+        match node {
+            FileTreeNode::Directory(directory) => {
+                directory.children.push(FileTreeNode::Image(image));
+            }
+            FileTreeNode::Image(_) => panic!("Image nodes should not have children"),
+        };
     }
 
-    fn convert_node_into_item(node: Node, name: String) -> Item {
-        Item {
-            id: node.id.unwrap(),
-            name,
-            children: if node.children.is_empty() {
-                None
-            } else {
-                Some(node.children.into_iter().map(|(name, node)| convert_node_into_item(node, name)).collect())
-            },
-        }
+    match root {
+        FileTreeNode::Directory(directory) => directory.children,
+        FileTreeNode::Image(_) => vec![],
     }
-
-    let mut root = Node::default();
-    let mut id_counter = 1;
-
-    build_tree(paths, &mut root, &mut id_counter);
-    root.children.into_iter().map(|(name, node)| convert_node_into_item(node, name)).collect()
-
 }
+
+
 
 #[command]
-fn get_file_tree_data(path: String) -> Vec<Item> {
-    let paths = list_paths(&path, true);
-    let file_tree = paths_to_file_tree(paths);
+fn get_file_tree_data(path: String) -> Vec<FileTreeNode> {
+    let default_extensions = vec!["jpeg", "jpg", "png"];
+    let image_map = get_images(&path, &default_extensions);
+    let file_tree = paths_to_file_tree(image_map);
     file_tree
 }
 
-fn list_paths(path: &str, return_relative: bool) -> Vec<PathBuf> {
-    WalkDir::new(path)
-        .into_iter()
-        .filter_map(Result::ok)
-        .map(|entry| {
-            if return_relative {
-                entry.path().strip_prefix(path).unwrap().to_path_buf()
-            } else {
-                entry.into_path()
+fn get_images(search_path: &str, extensions: &[&str]) -> HashMap<String, Image> {
+        
+    fn create_image(absolute_path: &PathBuf, relative_path: &PathBuf) -> Option<Image> {
+        // let md5_hash = compute_md5_hash(&path);
+        let file_format = match absolute_path.extension() {
+            Some(os_str) => match os_str.to_str() {
+                Some(s) => s.to_string(),
+                None => {
+                    // Handle the error as needed
+                    // For example, return a default value
+                    "unknown".to_string()
+                }
+            },
+            None => {
+                // Handle the error as needed
+                // For example, return a default value
+                "unknown".to_string()
             }
+        };
+
+        let name = match absolute_path.file_name() {
+            Some(os_str) => match os_str.to_str() {
+                Some(s) => s.to_string(),
+                None => {
+                    // Handle the error as needed
+                    // For example, return a default value
+                    "unknown".to_string()
+                }
+            },
+            None => {
+                // Handle the error as needed
+                // For example, return a default value
+                "unknown".to_string()
+            }
+        };
+
+        // TODO: Add these properties later
+        // let metadata = std::fs::metadata(&path).ok()?;
+        // let creation_time = metadata.created().ok()?;
+        // let size = metadata.len();
+        // let resolution = get_image_resolution(&path);
+
+        Some(Image {
+            absolute_path: absolute_path.to_path_buf(),
+            relative_path: relative_path.to_path_buf(),
+            name,
+            // creation_time,
+            // size,
+            // resolution,
+            // md5_hash,
+            file_format,
         })
-        .collect()
+    }
+    
+    // fn compute_md5_hash(path: &PathBuf) -> String {
+    //     let mut file = File::open(&path).unwrap();
+    //     let mut buffer = Vec::new();
+    //     file.read_to_end(&mut buffer).unwrap();
+    //     format!("{:x}", md5::compute(&buffer))
+    // }
+    
+    let mut map = HashMap::new();
+
+    for entry in WalkDir::new(search_path) {
+        if let Ok(entry) = entry {
+            if entry.path().extension().map_or(false, |extension| extensions.contains(&extension.to_str().unwrap())) {
+                let absolute_path=entry.into_path();
+                let relative_path = absolute_path.strip_prefix(search_path).unwrap().to_path_buf();
+
+                match create_image(&absolute_path, &relative_path) {
+                    Some(image) => {
+                        map.insert(relative_path.to_string_lossy().to_string(), image);
+                    }
+                    None => {}
+                }
+            }
+        }
+    }
+    map
 }
 
 fn main() {
