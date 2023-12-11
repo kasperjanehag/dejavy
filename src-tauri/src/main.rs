@@ -207,9 +207,15 @@ fn get_images(search_path: &str, extensions: &[&str]) -> HashMap<String, Image> 
     map
 }
 
+#[tauri::command]
+fn get_image_data(absolute_path: String) -> String {
+  let image_data = std::fs::read(absolute_path).expect("Failed to read image file");
+  base64::encode(image_data)
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_file_tree_data])
+        .invoke_handler(tauri::generate_handler![get_file_tree_data,get_image_data])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

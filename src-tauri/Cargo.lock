@@ -538,6 +538,7 @@ dependencies = [
 name = "dejavy"
 version = "0.0.0"
 dependencies = [
+ "base64 0.13.1",
  "md5",
  "serde",
  "serde_json",
