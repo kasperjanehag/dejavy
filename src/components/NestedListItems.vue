@@ -24,7 +24,7 @@
 
     <!-- FILES  -->
     <v-list-item 
-        v-for="(item, i) in itemsFiles"
+        v-for="(item, _) in itemsFiles"
         :key="item.id"
         :prepend-icon="item.icon"
         :title="item.name"
@@ -37,15 +37,15 @@ import NestedListItems from './NestedListItems.vue';
 
 interface FileTreeItem {
     id: number;
-    name?: string;
+    name: string;
+    icon: string;
+    is_open: boolean;
+    type: 'directory' | 'image';
     absolute_path?: string;
     file_format?: string;
     relative_path?: string;
     children?: FileTreeItem[];
-    icon?: string;
-    is_open?: boolean;
-    type?: 'directory' | 'image';
-}
+  }
 
 const props = defineProps<{
   items: FileTreeItem[];

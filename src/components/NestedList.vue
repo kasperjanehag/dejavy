@@ -20,14 +20,14 @@
     
   interface FileTreeItem {
     id: number;
-    name?: string;
+    name: string;
+    icon: string;
+    is_open: boolean;
+    type: 'directory' | 'image';
     absolute_path?: string;
     file_format?: string;
     relative_path?: string;
     children?: FileTreeItem[];
-    icon?: string;
-    is_open?: boolean;
-    type?: 'directory' | 'image';
   }
 
   interface Image {
@@ -42,7 +42,7 @@
     children?: FileTreeItem[];
   }
 
-  interface OriginalItem {
+  interface UnProcessedFileTreeItem {
     Directory?: Directory;
     Image?: Image;
   }
@@ -56,18 +56,21 @@
   const getFileTreeData = async () => {
     if (selectedDirectory.value) {
       const fileTreeData = await invoke('get_file_tree_data', { path: selectedDirectory.value });
-      return fileTreeData as OriginalItem[];
+      return fileTreeData as UnProcessedFileTreeItem[];
     } else {
       return [];
     }
   }
   
 
-  const processFileTree = (item: OriginalItem): FileTreeItem => {
+  const processFileTree = (item: UnProcessedFileTreeItem): FileTreeItem => {
     idCounter += 1;
-    const processedItem: FileTreeItem = {
+    let processedItem: FileTreeItem = {
       id: idCounter,
-      ...(item.Directory && { is_open: false }),
+      name: 'Unknown',
+      icon: 'mdi-help-box',
+      is_open: false,
+      type: 'directory',
     }
 
     if (item.Directory) {
