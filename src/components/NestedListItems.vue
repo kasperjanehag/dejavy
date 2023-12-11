@@ -31,24 +31,27 @@
     ></v-list-item>
   </template>
 
-<script>
+<script setup lang="ts">
+import { defineProps, computed } from 'vue';
 import NestedListItems from './NestedListItems.vue';
 
-export default {
-    name: 'NestedListItems',
-    props: {
-        items: {
-            type: Object,
-            required: true
-        }
-    },
-    computed: {
-            itemsFiles() {
-                return this.items.filter(item => !item.children);
-            },
-            itemsFolders() {
-                return this.items.filter(item => item.children && item.children.length > 0);
-            }
-        },
+interface FileTreeItem {
+    id: number;
+    name?: string;
+    absolute_path?: string;
+    file_format?: string;
+    relative_path?: string;
+    children?: FileTreeItem[];
+    icon?: string;
+    is_open?: boolean;
+    type?: 'directory' | 'image';
 }
+
+const props = defineProps<{
+  items: FileTreeItem[];
+}>();
+
+const itemsFiles = computed(() => props.items.filter(item => !item.children));
+const itemsFolders = computed(() => props.items.filter(item => item.children && item.children.length > 0));
+
 </script>
