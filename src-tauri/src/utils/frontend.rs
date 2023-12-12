@@ -16,7 +16,7 @@ pub enum FileTreeNode {
     Image(Image),
 }
 
-pub fn paths_to_file_tree(image_map: HashMap<String, Image>) -> Vec<FileTreeNode> {
+pub fn paths_to_file_tree(image_map: HashMap<String, Image>, search_path: &String) -> Vec<FileTreeNode> {
     let mut root = FileTreeNode::Directory(Directory {
         name: String::from("root"),
         children: Vec::new(),
@@ -25,9 +25,11 @@ pub fn paths_to_file_tree(image_map: HashMap<String, Image>) -> Vec<FileTreeNode
     for (path, image) in image_map {
         let mut node = &mut root;
 
+        let relative_path = Path::new(&path).strip_prefix(search_path).unwrap();
+
         // Go thorugh all components of the path and update current node as we walk down the path
         // Once all components has been iterated through
-        let components: Vec<_> = Path::new(&path).components().collect();
+        let components: Vec<_> = relative_path.components().collect();
 
         for (i, component) in components.iter().enumerate() {
             if i == components.len() - 1 {

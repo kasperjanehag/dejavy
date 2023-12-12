@@ -2,18 +2,22 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod utils;
-use tauri::command;
+use tauri::State;
+use std::collections::HashMap;
+use std::sync::Mutex;
 use utils::frontend::{paths_to_file_tree, FileTreeNode};
-use utils::image::get_images;
+use utils::image::{get_images, Image};
 
-#[command]
-fn get_file_tree_data(path: String) -> Vec<FileTreeNode> {
+struct MyCache(Mutex<HashMap<String, Image>>);
+
+#[tauri::command]
+fn get_file_tree_data(state: State<MyCache>, path: String) -> Vec<FileTreeNode> {
     let default_extensions = vec!["jpeg", "jpg", "png"];
-    let image_map = get_images(&path, &default_extensions);
-    let file_tree = paths_to_file_tree(image_map);
+    let mut cache = state.0.lock().unwrap();
+    let image_map = get_images(&path, &default_extensions, &mut *cache);
+    let file_tree = paths_to_file_tree(image_map, &path);
     file_tree
 }
-
 
 #[tauri::command]
 fn get_image_data(absolute_path: String) -> String {
@@ -23,7 +27,8 @@ fn get_image_data(absolute_path: String) -> String {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_file_tree_data,get_image_data])
+        .manage(MyCache(Mutex::new(HashMap::new())))
+        .invoke_handler(tauri::generate_handler![get_file_tree_data, get_image_data])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
