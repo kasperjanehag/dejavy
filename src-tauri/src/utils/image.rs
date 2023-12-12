@@ -20,7 +20,7 @@ pub struct Image {
 pub fn get_images(search_path: &str, extensions: &[&str], cache: &mut HashMap<String, Image>) -> HashMap<String, Image> {
         
     fn create_image(absolute_path: &PathBuf, relative_path: &PathBuf) -> Option<Image> {
-        // let md5_hash = compute_md5_hash(&path);
+
         let file_format = match absolute_path.extension() {
             Some(os_str) => match os_str.to_str() {
                 Some(s) => s.to_string(),
@@ -86,17 +86,21 @@ pub fn get_images(search_path: &str, extensions: &[&str], cache: &mut HashMap<St
         Ok(format!("{:x}", md5::compute(&buffer)))
     }
     
+    // Create a vector of directory entries for the given search path, filtering for files with the specified extensions
     let entries: Vec<_> = WalkDir::new(search_path)
         .into_iter()
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().map_or(false, |extension| extensions.contains(&extension.to_str().unwrap())))
         .collect();
 
-        
+    // Use rayon's parallel iterator to create a HashMap of new images that are not already in the cache
     let new_images: HashMap<_, _> = entries.par_iter().filter_map(|entry| {
+
+        // Get the absolute and relative paths of the entry
         let absolute_path = entry.path().to_path_buf();
         let relative_path = absolute_path.strip_prefix(search_path).unwrap().to_path_buf();
     
+        // If the image is not already in the cache, create a new image and add it to the HashMap
         if !cache.contains_key(&absolute_path.to_string_lossy().to_string()) {
             create_image(&absolute_path, &relative_path).map(|image| (absolute_path.to_string_lossy().to_string(), image))
         } else {
@@ -104,8 +108,9 @@ pub fn get_images(search_path: &str, extensions: &[&str], cache: &mut HashMap<St
         }
     }).collect();
     
+    // Extend the cache with the new images
     cache.extend(new_images);
-        
-    cache.clone()
     
+    // Return a clone of the updated cache
+    cache.clone()
 }
