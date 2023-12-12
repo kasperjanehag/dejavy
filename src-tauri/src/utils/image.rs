@@ -1,6 +1,8 @@
 use walkdir::WalkDir;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::fs::File;
+use std::io::Read;
 
 #[derive(serde::Serialize, Debug)]
 pub struct Image {
@@ -11,7 +13,7 @@ pub struct Image {
     // creation_time: SystemTime,
     // size: u64,
     // resolution: Option<(u32, u32)>, // This will be None if the resolution can't be determined
-    // md5_hash: String,
+    md5_hash: Option<String>,
 }
 
 pub fn get_images(search_path: &str, extensions: &[&str]) -> HashMap<String, Image> {
@@ -50,7 +52,13 @@ pub fn get_images(search_path: &str, extensions: &[&str]) -> HashMap<String, Ima
             }
         };
 
-        
+        let md5_hash = match compute_md5_hash(&absolute_path) {
+            Ok(hash) => Some(hash),
+            Err(e) => {
+                eprintln!("Failed to compute MD5 hash for {:?}: {}", absolute_path, e);
+                None
+            }
+        };
 
         // TODO: Add these properties later
         // let metadata = std::fs::metadata(&path).ok()?;
@@ -65,17 +73,17 @@ pub fn get_images(search_path: &str, extensions: &[&str]) -> HashMap<String, Ima
             // creation_time,
             // size,
             // resolution,
-            // md5_hash,
+            md5_hash,
             file_format,
         })
     }
     
-    // fn compute_md5_hash(path: &PathBuf) -> String {
-    //     let mut file = File::open(&path).unwrap();
-    //     let mut buffer = Vec::new();
-    //     file.read_to_end(&mut buffer).unwrap();
-    //     format!("{:x}", md5::compute(&buffer))
-    // }
+    fn compute_md5_hash(path: &PathBuf) -> std::io::Result<String> {
+        let mut file = File::open(&path)?;
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)?;
+        Ok(format!("{:x}", md5::compute(&buffer)))
+    }
     
     let mut map = HashMap::new();
 
