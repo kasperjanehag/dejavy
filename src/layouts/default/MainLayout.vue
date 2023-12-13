@@ -1,27 +1,20 @@
 <template>
-  <v-main class="d-flex align-center justify-center" style="min-height: 300px;">
-    <v-img
-      v-for="(image, index) in selectedImagesStore.images"
-      :key="image.absolute_path"
-      :src="imageData[index]"
-    ></v-img>
+  <v-main>
+    <v-container>
+      <v-row v-for="(duplicateSet, md5Hash) in identifiedDuplicatesStore.$state.duplicates" :key="md5Hash">
+        <v-col cols="3">
+          <v-card-title>{{ md5Hash }}</v-card-title>
+        </v-col>
+        <v-col v-for="imagePath in duplicateSet" :key="imagePath" cols="auto">
+          <v-card-text>{{ imagePath }}</v-card-text>
+        </v-col>
+      </v-row>
+    </v-container>
   </v-main>
 </template>
 
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue';
-import { useSelectedImagesStore } from '../../stores/selectedImagesStore';
-import { invoke } from '@tauri-apps/api/tauri';
+import { useIdentifiedDuplicatesStore } from '../../stores/identifiedDuplicatesStore';
 
-const selectedImagesStore = useSelectedImagesStore();
-const imageData = ref<string[]>([]);
-
-watchEffect(async () => {
-  imageData.value = await Promise.all(
-    selectedImagesStore.images.map(image =>
-      invoke('get_image_data', { absolutePath: image.absolute_path })
-        .then(data => `data:image/png;base64,${data}`)
-    )
-  );
-});
+const identifiedDuplicatesStore = useIdentifiedDuplicatesStore();
 </script>

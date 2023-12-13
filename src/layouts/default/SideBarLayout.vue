@@ -15,6 +15,21 @@
         </v-col>
       </v-row>
     </v-container>
+
+    <v-container fluid>
+      <v-row>
+        <v-col cols="12">
+          <v-card class="d-flex align-center" flat tile>
+            <v-card-actions class="flex-grow-1 rounded-l">
+              <v-btn color="secondary" @click="identifyDuplicates" block rounded="xl" class="subtitle-1">Identify Duplicates</v-btn>
+            </v-card-actions>
+            <v-card-text class="flex-grow-1 rounded-r d-flex align-center justify-center subtitle-1">
+              <span>{{ displayedDirectory }}</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
     
     <v-container fluid>
       <v-row justify="center" align="center">
@@ -49,6 +64,10 @@
 <script setup lang="ts">
 import { ref, computed, provide } from 'vue';
 import { open } from '@tauri-apps/api/dialog';
+import { useIdentifiedDuplicatesStore } from '../../stores/identifiedDuplicatesStore';
+import { invoke } from "@tauri-apps/api/tauri"; 
+
+const identifiedDuplicatesStore = useIdentifiedDuplicatesStore();
 
 const extensions = ['png', 'jpeg', 'jpg', 'gif', 'bmp', 'tiff', 'ico', 'webp'];
 const activeExtensions = ref<string[]>(extensions);
@@ -86,6 +105,23 @@ const selectDirectory = async () => {
 
 provide('selectedDirectory', selectedDirectory);
 
+const identifyDuplicates = async () => {
+  if (!selectedDirectory.value) {
+    console.log('No directory selected');
+    return;
+  }
+
+  try {
+    const md5Duplicates: Record<string, string[]> = await invoke('get_md5_duplicates');
+      identifiedDuplicatesStore.clearDuplicates();
+    for (const [md5Hash, duplicateSet] of Object.entries(md5Duplicates)) {
+      identifiedDuplicatesStore.addDuplicateGroup(md5Hash, duplicateSet);
+    }
+  } catch (error) {
+    console.error('Error identifying duplicates:', error);
+  }
+};
+
 </script>
 
 <script lang="ts">
@@ -102,6 +138,5 @@ export default {
 .equal-width {
   width: 80px; /* Adjust this value to your needs */
 }
-
 
 </style>

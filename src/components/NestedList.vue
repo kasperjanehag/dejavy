@@ -55,7 +55,7 @@
   
   const getFileTreeData = async () => {
     if (selectedDirectory.value) {
-      const fileTreeData = await invoke('get_file_tree_data', { path: selectedDirectory.value });
+      const fileTreeData = await invoke('load_image_data', { path: selectedDirectory.value });
       return fileTreeData as UnProcessedFileTreeItem[];
     } else {
       return [];

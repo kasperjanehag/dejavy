@@ -14,7 +14,7 @@ pub struct Image {
     // creation_time: SystemTime,
     // size: u64,
     // resolution: Option<(u32, u32)>, // This will be None if the resolution can't be determined
-    md5_hash: Option<String>,
+    pub md5_hash: Option<String>,
 }
 
 pub fn get_images(search_path: &str, extensions: &[&str], cache: &mut HashMap<String, Image>) -> HashMap<String, Image> {
