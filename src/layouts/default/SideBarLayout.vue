@@ -30,6 +30,21 @@
         </v-col>
       </v-row>
     </v-container>
+
+    <v-container fluid>
+      <v-row>
+        <v-col cols="12">
+          <v-card class="d-flex align-center" flat tile>
+            <v-card-actions class="flex-grow-1 rounded-l">
+              <v-btn color="secondary" @click="refreshFiles" block rounded="xl" class="subtitle-1">Refresh Files</v-btn>
+            </v-card-actions>
+            <v-card-text class="flex-grow-1 rounded-r d-flex align-center justify-center subtitle-1">
+              <span>{{ displayedDirectory }}</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
     
     <v-container fluid>
       <v-row justify="center" align="center">
@@ -55,6 +70,7 @@
         </v-col>
       </v-row>
     </v-container>
+
     
     <v-divider></v-divider>
     <nested-list/>
@@ -62,10 +78,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide } from 'vue';
+import { ref, computed, provide, defineComponent } from 'vue';
 import { open } from '@tauri-apps/api/dialog';
 import { useIdentifiedDuplicatesStore } from '../../stores/identifiedDuplicatesStore';
 import { invoke } from "@tauri-apps/api/tauri"; 
+import NestedList from '../../components/NestedList.vue';
+
 
 const identifiedDuplicatesStore = useIdentifiedDuplicatesStore();
 
@@ -113,25 +131,41 @@ const identifyDuplicates = async () => {
 
   try {
     const md5Duplicates: Record<string, string[]> = await invoke('get_md5_duplicates');
-      identifiedDuplicatesStore.clearDuplicates();
+    identifiedDuplicatesStore.clearDuplicates();
+    
     for (const [md5Hash, duplicateSet] of Object.entries(md5Duplicates)) {
       identifiedDuplicatesStore.addDuplicateGroup(md5Hash, duplicateSet);
     }
+
   } catch (error) {
     console.error('Error identifying duplicates:', error);
   }
+  
 };
 
-</script>
+const refreshFiles = async () => {
+  if (!selectedDirectory.value) {
+    console.log('No directory selected');
+    return;
+  }
 
-<script lang="ts">
-import NestedList from '../../components/NestedList.vue';
+  try {
+    // Invoke the backend function to refresh the image cache
+    await invoke('refresh_image_cache', { path: selectedDirectory.value });
 
-export default {
+    // Recalculate the duplicates
+    await identifyDuplicates();
+  } catch (error) {
+    console.error('Error refreshing files:', error);
+  }
+};
+
+defineComponent({
   components: {
     NestedList
   },
-};
+});
+
 </script>
 
 <style scoped>
