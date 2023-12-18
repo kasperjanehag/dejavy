@@ -52,7 +52,7 @@
           <div>
             <v-row>
               <v-col v-for="ext in ['png', 'jpeg', 'jpg', 'gif']" :key="ext">
-                <v-btn class="equal-width" :color="activeExtensions.includes(ext) ? 'primary' : ''" @click="toggleExtension(ext)">
+                <v-btn class="equal-width" :color="activeExtensions.includes(ext) ? 'primary' : ''" @click="toggleFileExtension(ext)">
                   <v-icon left>mdi-file-image</v-icon>
                   {{ ext }}
                 </v-btn>
@@ -60,7 +60,7 @@
             </v-row>
             <v-row>
               <v-col v-for="ext in ['bmp', 'tiff', 'ico', 'webp']" :key="ext">
-                <v-btn class="equal-width" :color="activeExtensions.includes(ext) ? 'primary' : ''" @click="toggleExtension(ext)">
+                <v-btn class="equal-width" :color="activeExtensions.includes(ext) ? 'primary' : ''" @click="toggleFileExtension(ext)">
                   <v-icon left>mdi-file-image</v-icon>
                   {{ ext }}
                 </v-btn>
@@ -78,22 +78,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide, defineComponent } from 'vue';
+import { ref, computed, defineComponent } from 'vue';
 import { open } from '@tauri-apps/api/dialog';
 import { useIdentifiedDuplicatesStore } from '../../stores/identifiedDuplicatesStore';
+import { useSelectedDirectoryStore } from '../../stores/selectedDirectoryStore';
 import { invoke } from "@tauri-apps/api/tauri"; 
 import NestedList from '../../components/NestedList.vue';
 
 
 const identifiedDuplicatesStore = useIdentifiedDuplicatesStore();
+const selectedDirectoryStore = useSelectedDirectoryStore();
 
 const extensions = ['png', 'jpeg', 'jpg', 'gif', 'bmp', 'tiff', 'ico', 'webp'];
 const activeExtensions = ref<string[]>(extensions);
 const selectedDirectory = ref('');
 
 const displayedDirectory = computed(() => {
-  if (selectedDirectory.value) {
-    let parts = selectedDirectory.value.split('/');
+  if (selectedDirectoryStore.selectedDirectory) { // use the selectedDirectory from the store
+    let parts = selectedDirectoryStore.selectedDirectory.split('/');
     let lastThreeParts = parts.slice(-3).join('/');
     return lastThreeParts.length > 20 ? '...' + lastThreeParts.slice(-20) : '...' + lastThreeParts;
   } else {
@@ -101,7 +103,7 @@ const displayedDirectory = computed(() => {
   }
 });
 
-const toggleExtension = (ext: string) => {
+const toggleFileExtension = (ext: string) => {
   const index = activeExtensions.value.indexOf(ext);
   if (index >= 0) {
     activeExtensions.value.splice(index, 1);
@@ -114,17 +116,16 @@ const selectDirectory = async () => {
   try {
     const selected = await open({ directory: true, multiple: false });
     if (selected) {
-      selectedDirectory.value = Array.isArray(selected) ? selected[0] : selected;
+      const directory = Array.isArray(selected) ? selected[0] : selected;
+      selectedDirectoryStore.setSelectedDirectory(directory); // use the store action
     }
   } catch (error) {
     console.error('Error selecting directory:', error);
   }
 };
 
-provide('selectedDirectory', selectedDirectory);
-
 const identifyDuplicates = async () => {
-  if (!selectedDirectory.value) {
+  if (!selectedDirectoryStore.selectedDirectory) {
     console.log('No directory selected');
     return;
   }
@@ -144,14 +145,14 @@ const identifyDuplicates = async () => {
 };
 
 const refreshFiles = async () => {
-  if (!selectedDirectory.value) {
+  if (!selectedDirectoryStore.selectedDirectory) {
     console.log('No directory selected');
     return;
   }
 
   try {
     // Invoke the backend function to refresh the image cache
-    await invoke('refresh_image_cache', { path: selectedDirectory.value });
+    await invoke('refresh_image_cache', { path: selectedDirectoryStore.selectedDirectory });
 
     // Recalculate the duplicates
     await identifyDuplicates();
